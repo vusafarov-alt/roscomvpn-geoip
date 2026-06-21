@@ -144,7 +144,7 @@ jobs:
           git checkout master
           git add release/
           git commit -m "Release ${{ env.DAILY_TAG }}" || echo "No changes to commit"
-          git push origin master
+          git push -f origin master
 
       - name: MASTER Publish GitHub Release
         if: github.ref_name == 'master'
@@ -216,12 +216,3 @@ jobs:
             ${{ env.CURL }} -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@test/release/${rel}"
             ${{ env.CURL }} -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@test-release/${rel}"
           done
-
-      - name: Trigger routing update
-        if: success() && github.ref_name == 'master'
-        uses: peter-evans/repository-dispatch@v4
-        with:
-          token: ${{ secrets.PAT_FOR_ROUTING }}
-          repository: hydraponique/roscomvpn-routing
-          event-type: update-routing-configs
-          
