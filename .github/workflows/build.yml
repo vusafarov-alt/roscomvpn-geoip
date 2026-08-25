@@ -91,7 +91,22 @@ jobs:
           ${{ env.CURL }} -o /tmp/GeoLite2-ASN-CSV.zip https://dl.netsyms.net/dbs/geolite2/GeoLite2-ASN-CSV.zip
           unzip -j /tmp/GeoLite2-ASN-CSV.zip '*/GeoLite2-ASN-Blocks-*.csv' -d ./geolite2
           ls -l ./geolite2/
-
+      - name: DEBUG Input sizes
+        working-directory: geoip
+        run: |
+          set -euo pipefail
+          echo "=== Строк в каждом скачанном источнике ==="
+          for f in whitelist.txt antifilterdownloadcommunity.txt refilter.txt refiltercommunity.txt antifilternetwork.txt cdn.lst merged.sum geolite_ru.lst geolite_by.lst ipinfo_ru.lst ipinfo_by.lst dbip_ru.lst dbip_by.lst; do
+            if [ -f "$f" ]; then
+              printf "%-32s %10s строк   %10s байт\n" "$f" "$(wc -l < "$f")" "$(wc -c < "$f")"
+            else
+              echo "$f: ФАЙЛ ОТСУТСТВУЕТ"
+            fi
+          done
+          echo "=== geolite2 CSV ==="
+          for f in ./geolite2/*.csv; do
+            printf "%-40s %10s строк   %10s байт\n" "$f" "$(wc -l < "$f")" "$(wc -c < "$f")"
+          done
       - name: Build geoip tool
         working-directory: geoip
         run: |
