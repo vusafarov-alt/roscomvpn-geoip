@@ -19,7 +19,7 @@ permissions:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       CURL: "curl -fsSL --retry 3 --retry-delay 2 --retry-connrefused"
     steps:
@@ -144,6 +144,14 @@ jobs:
       - name: MASTER Push to release branch and update master
         if: github.ref_name == 'master'
         run: |
+          push_retry() {
+            for i in 1 2 3 4 5; do
+              git push "$@" && return 0
+              echo "::warning::git push $* failed (attempt $i), retrying in $((i*10))s"
+              sleep $((i*10))
+            done
+            return 1
+          }
           cd release || exit 1
           git init
           git config --local user.name "hydraponique"
@@ -152,14 +160,14 @@ jobs:
           git add -A
           git commit -m "Release ${{ env.DAILY_TAG }}"
           git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
-          git push -f -u origin release
+          push_retry -f -u origin release
           cd .. || exit 1
           git config --local user.name "hydraponique"
           git config --local user.email "hydraponique@users.noreply.github.com"
           git checkout master
           git add release/
           git commit -m "Release ${{ env.DAILY_TAG }}" || echo "No changes to commit"
-          git push origin master
+          push_retry origin master
 
       - name: MASTER Publish GitHub Release
         if: github.ref_name == 'master'
@@ -204,6 +212,14 @@ jobs:
       - name: TEST Push to test-release branch & update test branch
         if: github.ref_name == 'test'
         run: |
+          push_retry() {
+            for i in 1 2 3 4 5; do
+              git push "$@" && return 0
+              echo "::warning::git push $* failed (attempt $i), retrying in $((i*10))s"
+              sleep $((i*10))
+            done
+            return 1
+          }
           cd release || exit 1
           git init
           git config --local user.name "hydraponique"
@@ -212,14 +228,14 @@ jobs:
           git add -A
           git commit -m "Test Release $(date -u +%Y%m%d%H%M)"
           git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
-          git push -f -u origin test-release
+          push_retry -f -u origin test-release
           cd .. || exit 1
           git config --local user.name "hydraponique"
           git config --local user.email "hydraponique@users.noreply.github.com"
           git checkout -B test
           git add release/
           git commit -m "Test Release $(date -u +%Y%m%d%H%M)" || echo "No changes to commit"
-          git push origin test
+          push_retry origin test
 
       - name: TEST Purge CDN for test-release and updated test branches
         if: github.ref_name == 'test'
